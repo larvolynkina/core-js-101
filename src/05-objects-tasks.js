@@ -20,10 +20,16 @@
  *    console.log(r.height);      // => 20
  *    console.log(r.getArea());   // => 200
  */
-function Rectangle(/* width, height */) {
-  throw new Error('Not implemented');
-}
 
+function Rectangle(width, height) {
+  return {
+    width,
+    height,
+    getArea() {
+      return this.height * this.width;
+    },
+  };
+}
 
 /**
  * Returns the JSON representation of specified object
@@ -35,10 +41,10 @@ function Rectangle(/* width, height */) {
  *    [1,2,3]   =>  '[1,2,3]'
  *    { width: 10, height : 20 } => '{"height":10,"width":20}'
  */
-function getJSON(/* obj */) {
-  throw new Error('Not implemented');
-}
 
+function getJSON(obj) {
+  return JSON.stringify(obj);
+}
 
 /**
  * Returns the object of specified type from JSON representation
@@ -51,10 +57,12 @@ function getJSON(/* obj */) {
  *    const r = fromJSON(Circle.prototype, '{"radius":10}');
  *
  */
-function fromJSON(/* proto, json */) {
-  throw new Error('Not implemented');
-}
 
+function fromJSON(proto, json) {
+  const result = JSON.parse(json);
+  Object.setPrototypeOf(result, proto);
+  return result;
+}
 
 /**
  * Css selectors builder
@@ -110,36 +118,145 @@ function fromJSON(/* proto, json */) {
  *  For more examples see unit tests.
  */
 
+class MySelector {
+  constructor() {
+    this.builder = {
+      element: '',
+      id: '',
+      class: [],
+      attr: '',
+      pseudoClass: [],
+      pseudoElement: '',
+      combineCollector: [],
+    };
+    this.orderArr = [];
+    this.orderErrorText = 'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element';
+    this.uniqueErrorText = 'Element, id and pseudo-element should not occur more then one time inside the selector';
+  }
+
+  element(value) {
+    if (this.builder.element) {
+      throw new Error(this.uniqueErrorText);
+    } else if (this.orderArr.length > 0) {
+      throw new Error(this.orderErrorText);
+    } else {
+      this.builder.element = value;
+      this.orderArr.push(1);
+      return this;
+    }
+  }
+
+  id(value) {
+    if (this.builder.id) {
+      throw new Error(this.uniqueErrorText);
+    } else if (this.orderArr.length > 0 && this.orderArr[0] > 2) {
+      throw new Error(this.orderErrorText);
+    } else {
+      this.builder.id = `#${value}`;
+      this.orderArr.push(2);
+      return this;
+    }
+  }
+
+  class(value) {
+    if (this.orderArr.length > 0 && this.orderArr[0] > 3) {
+      throw new Error(this.orderErrorText);
+    } else {
+      this.builder.class.push(`.${value}`);
+      this.orderArr.push(3);
+      return this;
+    }
+  }
+
+  attr(value) {
+    if (this.orderArr.length > 0 && this.orderArr[0] > 4) {
+      throw new Error(this.orderErrorText);
+    } else {
+      this.builder.attr = `[${value}]`;
+      this.orderArr.push(4);
+      return this;
+    }
+  }
+
+  pseudoClass(value) {
+    if (this.orderArr.length > 0 && this.orderArr[0] > 5) {
+      throw new Error(this.orderErrorText);
+    } else {
+      this.builder.pseudoClass.push(`:${value}`);
+      this.orderArr.push(5);
+      return this;
+    }
+  }
+
+  pseudoElement(value) {
+    if (this.builder.pseudoElement) {
+      throw new Error(this.uniqueErrorText);
+    } else {
+      this.builder.pseudoElement = `::${value}`;
+      this.orderArr.push(6);
+      return this;
+    }
+  }
+
+  combine(selector1, combinator, selector2) {
+    const first = selector1.stringify();
+    this.builder.combineCollector.push(first);
+    this.builder.combineCollector.push(combinator);
+    const second = selector2.stringify();
+    this.builder.combineCollector.push(second);
+    return this;
+  }
+
+  stringify() {
+    let selector = '';
+    if (this.builder.combineCollector.length > 0) {
+      selector += this.builder.combineCollector.join(' ');
+    } else {
+      const keys = Object.keys(this.builder);
+      keys.forEach((key) => {
+        if (this.builder[key]) {
+          if (Array.isArray(this.builder[key])) {
+            const arrToString = this.builder[key].join('');
+            selector += arrToString;
+          } else {
+            selector += this.builder[key];
+          }
+        }
+      });
+    }
+    return selector;
+  }
+}
+
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    return new MySelector().element(value);
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    return new MySelector().id(value);
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    return new MySelector().class(value);
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    return new MySelector().attr(value);
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    return new MySelector().pseudoClass(value);
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    return new MySelector().pseudoElement(value);
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  combine(selector1, combinator, selector2) {
+    return new MySelector().combine(selector1, combinator, selector2);
   },
 };
-
 
 module.exports = {
   Rectangle,
